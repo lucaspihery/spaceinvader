@@ -7,6 +7,6 @@
 ![Logo](img/space.jpg)
 
 ## VT100
-![VT100](img/VT100.png
+![VT100](img/VT100.png)
 * 80 colognes par 24 lignes
 
