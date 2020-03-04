@@ -20,6 +20,8 @@ typedef struct {
 	uint8_t type;
 } alien;
 
+uint8_t alien_killed = 0;
+uint8_t alien_speed = 15;
 uint8_t live = 51;
 uint16_t score = 0;
 uint8_t input;
@@ -207,7 +209,7 @@ int main(void) {
 		}
 
 		/* Deplacement des aliens */
-		if (i == 15) {
+		if (i == alien_speed) {
 			for (va = 0; va < 15; va++) {
 				if (aliens[va].status == 1) {
 					vt100_move(aliens[va].x, aliens[va].y);
@@ -272,13 +274,21 @@ int main(void) {
 				aliens[va].status = 0;
 				vt100_move(aliens[va].x, aliens[va].y);
 				serial_puts("    ");
+				alien_killed++;
 				ym = 20;
 				missile_lance = 0;
 				aliens[va].x = 0;
 				aliens[va].y = 24;
 			}
 		}
-
+		if(alien_killed > 5){
+			alien_speed=10;
+			alien_killed=0;
+		}
+		if(alien_killed > 5){
+					alien_speed=5;
+					alien_killed=0;
+				}
 	}
 
 	game_loose();
