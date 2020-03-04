@@ -71,6 +71,8 @@ int main(void) {
 		aliens[va].type = 3;
 	}
 
+	serial_init(115200);
+
 	game_waiting_screen(); /* Fonction d'initialisation du jeu */
 
 	vt100_clear_screen();
@@ -82,7 +84,7 @@ int main(void) {
 			vt100_move(aliens[va].x, aliens[va].y);
 			serial_puts(alien1);
 		}
-		if (5 <= va < 10) {
+		if ((5 <= va) && (va < 10)) {
 			vt100_move(aliens[va].x, aliens[va].y);
 			serial_puts(alien2);
 		}
@@ -214,7 +216,18 @@ int main(void) {
 					if (aliens[va].sens == 1) {
 						aliens[va].x += 1;
 						vt100_move(aliens[va].x, aliens[va].y);
-						serial_puts(alien1);
+						switch(aliens[va].type)
+						{
+						case 1:
+							serial_puts(alien1);
+							break;
+						case 2:
+							serial_puts(alien2);
+							break;
+						case 3:
+							serial_puts(alien3);
+							break;
+						}
 						if (aliens[va].x == 78) {
 							vt100_move(aliens[va].x, aliens[va].y);
 							serial_puts("    ");
@@ -225,7 +238,18 @@ int main(void) {
 					if (aliens[va].sens == 0) {
 						aliens[va].x -= 1;
 						vt100_move(aliens[va].x, aliens[va].y);
-						serial_puts(alien1);
+						switch(aliens[va].type)
+						{
+						case 1:
+							serial_puts(alien1);
+							break;
+						case 2:
+							serial_puts(alien2);
+							break;
+						case 3:
+							serial_puts(alien3);
+							break;
+						}
 						if (aliens[va].x == 0) {
 							vt100_move(aliens[va].x, aliens[va].y);
 							serial_puts("    ");
