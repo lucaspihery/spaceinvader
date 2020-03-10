@@ -44,11 +44,11 @@ void game_rules(void) {
 	vt100_move(38, 11);
 	serial_puts("Points :");
 	vt100_move(35, 13);
-	serial_puts("<TT> : 500 Pts");
+	serial_puts("<VV> : 500 Pts");
 	vt100_move(35, 15);
-	serial_puts("<==> : 250 Pts");
+	serial_puts("<TT> : 250 Pts");
 	vt100_move(35, 17);
-	serial_puts("<VV> : 100 Pts");
+	serial_puts("<==> : 100 Pts");
 	vt100_move(27, 22);
 	serial_puts("Press <SPACE> to play !");
 
@@ -140,10 +140,12 @@ void game_loose(void) {
 void game_win(void) {
 
 	vt100_clear_screen();
-	vt100_move(35, 9);
-	serial_puts("YOU WIN !");
-	vt100_move(34, 11);
-	serial_puts("Your score : ");
+	vt100_move(31, 10);
+	serial_puts("╦ ╦╔═╗╦ ╦  ╦ ╦╦╔╗╔");
+	vt100_move(31, 11);
+	serial_puts("╚╦╝║ ║║ ║  ║║║║║║║");
+	vt100_move(31, 12);
+	serial_puts(" ╩ ╚═╝╚═╝  ╚╩╝╩╝╚╝");
 	//serial_putchar(score);
 
 	while (1) {

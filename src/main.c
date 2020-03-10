@@ -33,6 +33,7 @@ uint8_t xm = 40;
 uint8_t ym = 20;
 uint8_t xb;
 uint8_t yb;
+char c_score[4];
 char missile = '|';
 char bombe = '*';
 char ship[] = "<=^=>";
@@ -104,15 +105,14 @@ int main(void) {
 
 		i++;
 		j++;
-
+		sprintf(c_score, "%d", score);
 		vt100_move(xv, yv);
 		serial_puts(ship);
 		vt100_move(2, 1);
-		serial_puts("SCORE: ");
-		serial_putchar(score);
+		serial_puts("Score : ");
+		serial_puts(c_score);
 		vt100_move(72, 1);
-		serial_puts("VIES: ");
-		vt100_move(79, 1);
+		serial_puts("Lives : ");
 		serial_putchar(live);
 
 		input = serial_get_last_char();
@@ -138,7 +138,7 @@ int main(void) {
 			serial_puts(ship);
 		}
 
-		/***********************************************************/
+		/* Missile */
 		if (input == 32 && ym == yv) {
 			missile_lance = 1;
 			xm = xv + 2;
@@ -162,7 +162,7 @@ int main(void) {
 				}
 			}
 		}
-
+		/* Bombe alien */
 		if (j == 300) {
 			random = rand() % 15;
 			while (aliens[random].status == 0) {
@@ -218,8 +218,7 @@ int main(void) {
 					if (aliens[va].sens == 1) {
 						aliens[va].x += 1;
 						vt100_move(aliens[va].x, aliens[va].y);
-						switch(aliens[va].type)
-						{
+						switch (aliens[va].type) {
 						case 1:
 							serial_puts(alien1);
 							break;
@@ -240,8 +239,7 @@ int main(void) {
 					if (aliens[va].sens == 0) {
 						aliens[va].x -= 1;
 						vt100_move(aliens[va].x, aliens[va].y);
-						switch(aliens[va].type)
-						{
+						switch (aliens[va].type) {
 						case 1:
 							serial_puts(alien1);
 							break;
@@ -267,6 +265,7 @@ int main(void) {
 			}
 		}
 
+		/* Collision missile alien */
 		for (va = 0; va < 15; va++) {
 			if (((xm == aliens[va].x) || (xm == aliens[va].x + 1)
 					|| (xm == aliens[va].x + 2) || (xm == aliens[va].x + 3))
@@ -275,24 +274,40 @@ int main(void) {
 				vt100_move(aliens[va].x, aliens[va].y);
 				serial_puts("    ");
 				alien_killed++;
+
+				switch (aliens[va].type)
+				{
+				case 1:
+					score += 500;
+					break;
+				case 2:
+					score += 250;
+					break;
+				case 3:
+					score += 100;
+					break;
+				}
+
 				ym = 20;
 				missile_lance = 0;
 				aliens[va].x = 0;
 				aliens[va].y = 24;
 			}
 		}
-		if(alien_killed > 5){
-			alien_speed=10;
-			alien_killed=0;
+
+		/* Variation de vitesse */
+		if (alien_killed == 5) {
+			alien_speed = 10;
 		}
-		if(alien_killed > 5){
-					alien_speed=5;
-					alien_killed=0;
-				}
+		if (alien_killed == 10) {
+			alien_speed = 5;
+		}
+	}
+	if (live == 48) {
+		game_loose();
 	}
 
-	game_loose();
-
+	game_win();
 }
 
 void EVAL_AUDIO_TransferComplete_CallBack(uint32_t pBuffer, uint32_t Size) {
