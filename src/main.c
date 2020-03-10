@@ -6,16 +6,19 @@
  ******************************************************************************
  */
 
+#include <stdio.h>
 #include "stm32f4xx.h"
 #include "stm32f4_discovery.h"
 #include "vt100.h"
 #include "serial.h"
 #include "game_status.h"
 
+typedef enum {Gauche,Droite}direction;
+
 typedef struct {
 	uint8_t x;
 	uint8_t y;
-	uint8_t sens;
+	direction sens;
 	uint8_t status;
 	uint8_t type;
 } alien;
@@ -56,21 +59,21 @@ int main(void) {
 		aliens[va].y = 4;
 		aliens[va].x = va * 8;
 		aliens[va].status = 1;
-		aliens[va].sens = 1;
+		aliens[va].sens = Droite;
 		aliens[va].type = 1;
 	}
 	for (va = 5; va < 10; va++) {
 		aliens[va].y = 6;
 		aliens[va].x = (va - 5) * 8;
 		aliens[va].status = 1;
-		aliens[va].sens = 1;
+		aliens[va].sens = Droite;
 		aliens[va].type = 2;
 	}
 	for (va = 10; va < 15; va++) {
 		aliens[va].y = 8;
 		aliens[va].x = (va - 10) * 8;
 		aliens[va].status = 1;
-		aliens[va].sens = 1;
+		aliens[va].sens = Droite;
 		aliens[va].type = 3;
 	}
 
@@ -99,13 +102,15 @@ int main(void) {
 
 	while (1) {
 
-		if (live == 48) {
+		i++;
+		j++;
+
+		sprintf(c_score, "%d", score);
+
+		if ((live == 48) || (score >= 4250)) {
 			break;
 		}
 
-		i++;
-		j++;
-		sprintf(c_score, "%d", score);
 		vt100_move(xv, yv);
 		serial_puts(ship);
 		vt100_move(2, 1);
@@ -215,7 +220,7 @@ int main(void) {
 					vt100_move(aliens[va].x, aliens[va].y);
 					serial_puts("    ");
 
-					if (aliens[va].sens == 1) {
+					if (aliens[va].sens == Droite) {
 						aliens[va].x += 1;
 						vt100_move(aliens[va].x, aliens[va].y);
 						switch (aliens[va].type) {
@@ -233,10 +238,10 @@ int main(void) {
 							vt100_move(aliens[va].x, aliens[va].y);
 							serial_puts("    ");
 							aliens[va].y += 1;
-							aliens[va].sens = 0;
+							aliens[va].sens = Gauche;
 						}
 					}
-					if (aliens[va].sens == 0) {
+					if (aliens[va].sens == Gauche) {
 						aliens[va].x -= 1;
 						vt100_move(aliens[va].x, aliens[va].y);
 						switch (aliens[va].type) {
@@ -254,7 +259,7 @@ int main(void) {
 							vt100_move(aliens[va].x, aliens[va].y);
 							serial_puts("    ");
 							aliens[va].y += 1;
-							aliens[va].sens = 1;
+							aliens[va].sens = Droite;
 						}
 					}
 					if (aliens[va].y == 20) {
@@ -275,8 +280,7 @@ int main(void) {
 				serial_puts("    ");
 				alien_killed++;
 
-				switch (aliens[va].type)
-				{
+				switch (aliens[va].type) {
 				case 1:
 					score += 500;
 					break;
@@ -296,11 +300,11 @@ int main(void) {
 		}
 
 		/* Variation de vitesse */
-		if (alien_killed == 5) {
-			alien_speed = 10;
-		}
-		if (alien_killed == 10) {
-			alien_speed = 5;
+		if (score > 1500) {
+			alien_speed = 15;
+			if (score > 3000) {
+				alien_speed = 10;
+			}
 		}
 	}
 	if (live == 48) {

@@ -1,15 +1,10 @@
-/*
- * game_status.c
- *
- *  Created on: 4 mars 2020
- *      Author: lucas
- */
 #include <stdint.h>
 #include "serial.h"
 #include "vt100.h"
 #include "game_status.h"
 
 extern uint8_t input;
+extern char c_score[4];
 uint8_t selection = 0;
 
 void game_credit(void) {
@@ -124,14 +119,15 @@ void game_waiting_screen(void) {
 void game_loose(void) {
 
 	vt100_clear_screen();
-	vt100_move(31, 10);
+	vt100_move(29, 10);
 	serial_puts("╔═╗╔═╗╔╦╗╔═╗  ╔═╗╦  ╦╔═╗╦═╗");
-	vt100_move(31, 11);
+	vt100_move(29, 11);
 	serial_puts("║ ╦╠═╣║║║║╣   ║ ║╚╗╔╝║╣ ╠╦╝");
-	vt100_move(31, 12);
+	vt100_move(29, 12);
 	serial_puts("╚═╝╩ ╩╩ ╩╚═╝  ╚═╝ ╚╝ ╚═╝╩╚═");
-	//serial_putchar(score);
-
+	vt100_move(34, 14);
+	serial_puts("Your score : ");
+	serial_puts(c_score);
 	while (1) {
 
 	}
@@ -146,7 +142,9 @@ void game_win(void) {
 	serial_puts("╚╦╝║ ║║ ║  ║║║║║║║");
 	vt100_move(31, 12);
 	serial_puts(" ╩ ╚═╝╚═╝  ╚╩╝╩╝╚╝");
-	//serial_putchar(score);
+	vt100_move(31, 14);
+	serial_puts("Your score : ");
+	serial_puts(c_score);
 
 	while (1) {
 
