@@ -44,7 +44,7 @@ void game_rules(void) {
 	serial_puts("<TT> : 250 Pts");
 	vt100_move(35, 17);
 	serial_puts("<==> : 100 Pts");
-	vt100_move(27, 22);
+	vt100_move(30, 22);
 	serial_puts("Press <SPACE> to play !");
 
 	while (input != 32) /*32 ASCII de l'espace*/

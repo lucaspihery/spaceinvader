@@ -13,7 +13,9 @@
 #include "serial.h"
 #include "game_status.h"
 
-typedef enum {Gauche,Droite}direction;
+typedef enum {
+	Gauche, Droite
+} direction;
 
 typedef struct {
 	uint8_t x;
@@ -21,40 +23,46 @@ typedef struct {
 	direction sens;
 	uint8_t status;
 	uint8_t type;
-} alien;
+} t_alien;
 
-uint8_t alien_killed = 0;
-uint8_t alien_speed = 15;
-uint8_t live = 51;
-uint16_t score = 0;
 uint8_t input;
-uint8_t xv = 40;
-uint8_t yv = 20;
-uint8_t missile_lance = 0;
-uint8_t bombe_lance = 0;
-uint8_t xm = 40;
-uint8_t ym = 20;
-uint8_t xb;
-uint8_t yb;
 char c_score[4];
-char missile = '|';
-char bombe = '*';
-char ship[] = "<=^=>";
-char alien1[] = "<VV>";
-char alien2[] = "<TT>";
-char alien3[] = "<==>";
-
-uint8_t va = 0;
-alien aliens[15] = { 0 };
+uint8_t random = 0;
+int rand(void);
 
 int main(void) {
 
+	/* Coordonées */
+	uint8_t x_vaisseau = 40;
+	uint8_t y_vaisseau = 20;
+	uint8_t x_missile = 40;
+	uint8_t y_missile = 20;
+	uint8_t x_bombe;
+	uint8_t y_bombe;
+
+	uint8_t alien_speed = 15;
+	uint8_t live = 51;
+	uint16_t score = 0;
+	uint8_t missile_lance = 0;
+	uint8_t bombe_lance = 0;
+	uint8_t va;
+	t_alien aliens[15]= {0};
+
+	/* Skins */
+	char missile = '|';
+	char bombe = '*';
+	char ship[] = "<=^=>";
+	char alien1[] = "<VV>";
+	char alien2[] = "<TT>";
+	char alien3[] = "<==>";
+
+	/* Compteur */
 	int i = 0;
 	int h = 0;
 	int j = 0;
 	int k = 0;
-	uint8_t random = 0;
-	int rand(void);
+
+	/* Initialisation du tableau des aliens */
 	for (va = 0; va < 5; va++) {
 		aliens[va].y = 4;
 		aliens[va].x = va * 8;
@@ -77,41 +85,23 @@ int main(void) {
 		aliens[va].type = 3;
 	}
 
-	serial_init(115200);
+	serial_init(115200); /* Initialisation de la communication serie */
 
 	game_waiting_screen(); /* Fonction d'initialisation du jeu */
 
 	vt100_clear_screen();
-	vt100_move(xv, 20);
-	serial_puts(ship);
-
-	for (va = 0; va < 15; va++) {
-		if (va < 5) {
-			vt100_move(aliens[va].x, aliens[va].y);
-			serial_puts(alien1);
-		}
-		if ((5 <= va) && (va < 10)) {
-			vt100_move(aliens[va].x, aliens[va].y);
-			serial_puts(alien2);
-		}
-		if (va >= 10) {
-			vt100_move(aliens[va].x, aliens[va].y);
-			serial_puts(alien3);
-		}
-	}
 
 	while (1) {
 
 		i++;
 		j++;
 
-		sprintf(c_score, "%d", score);
-
 		if ((live == 48) || (score >= 4250)) {
 			break;
 		}
 
-		vt100_move(xv, yv);
+		sprintf(c_score, "%d", score); /* Converti l'entier score en une chaine de caractere */
+		vt100_move(x_vaisseau, y_vaisseau);
 		serial_puts(ship);
 		vt100_move(2, 1);
 		serial_puts("Score : ");
@@ -120,49 +110,49 @@ int main(void) {
 		serial_puts("Lives : ");
 		serial_putchar(live);
 
-		input = serial_get_last_char();
+		input = serial_get_last_char(); /* Prend le code ascii de la derniere touche appuyé */
 
-		if (input == 'd') {
-			vt100_move(xv, yv);
+		if (input == 'd') {   /* Condition de déplacement a droite */
+			vt100_move(x_vaisseau, y_vaisseau);
 			serial_puts("    ");
-			if (xv != 76) {
-				xv += 1;
+			if (x_vaisseau != 76) {
+				x_vaisseau += 1;
 			}
-			vt100_move(xv, yv);
+			vt100_move(x_vaisseau, y_vaisseau);
 			serial_puts(ship);
 
 		}
 
-		if (input == 'q') {
-			vt100_move(xv, yv);
+		if (input == 'q') {   /* Condition de déplacement a gauche */
+			vt100_move(x_vaisseau, y_vaisseau);
 			serial_puts("     ");
-			if (xv != 1) {
-				xv -= 1;
+			if (x_vaisseau != 1) {
+				x_vaisseau -= 1;
 			}
-			vt100_move(xv, 20);
+			vt100_move(x_vaisseau, 20);
 			serial_puts(ship);
 		}
 
 		/* Missile */
-		if (input == 32 && ym == yv) {
+		if (input == 32 && y_missile == y_vaisseau) {
 			missile_lance = 1;
-			xm = xv + 2;
+			x_missile = x_vaisseau + 2;
 		}
 		if (missile_lance == 1) {
 			h++;
 
-			if (ym != 3 && h == 10) {
-				vt100_move(xm, ym);
+			if (y_missile != 3 && h == 10) {
+				vt100_move(x_missile, y_missile);
 				serial_putchar(' ');
-				ym -= 1;
-				vt100_move(xm, ym);
+				y_missile -= 1;
+				vt100_move(x_missile, y_missile);
 				serial_putchar(missile);
 				h = 0;
 
-				if (ym == 3) {
-					vt100_move(xm, ym);
+				if (y_missile == 3) {
+					vt100_move(x_missile, y_missile);
 					serial_putchar(' ');
-					ym = 20;
+					y_missile = 20;
 					missile_lance = 0;
 				}
 			}
@@ -174,38 +164,38 @@ int main(void) {
 				random = rand() % 15;
 			}
 			bombe_lance = 1;
-			xb = aliens[random].x + 1;
-			yb = aliens[random].y;
+			x_bombe = aliens[random].x + 1;
+			y_bombe = aliens[random].y;
 
 		}
 		if (bombe_lance == 1) {
 			k++;
-			if (yb != 23 && k == 20) {
-				vt100_move(xb, yb);
+			if (y_bombe != 23 && k == 20) {
+				vt100_move(x_bombe, y_bombe);
 				serial_putchar(' ');
-				yb += 1;
-				vt100_move(xb, yb);
+				y_bombe += 1;
+				vt100_move(x_bombe, y_bombe);
 				serial_putchar(bombe);
 				k = 0;
-				if (((xb == xv) || (xb == xv + 1) || (xb == xv + 2)
-						|| (xb == xv + 3) || (xb == xv + 4)) && (yb == yv)) {
+				if (((x_bombe == x_vaisseau) || (x_bombe == x_vaisseau + 1) || (x_bombe == x_vaisseau + 2)
+						|| (x_bombe == x_vaisseau + 3) || (x_bombe == x_vaisseau + 4)) && (y_bombe == y_vaisseau)) {
 					live -= 1;
-					vt100_move(xb, yb);
+					vt100_move(x_bombe, y_bombe);
 					serial_putchar(' ');
 					bombe_lance = 0;
 					j = 0;
 
 				}
-				if ((xb == xm) && (yb == ym)) {
-					vt100_move(xb, yb);
+				if ((x_bombe == x_missile) && (y_bombe == y_missile)) {
+					vt100_move(x_bombe, y_bombe);
 					serial_putchar(' ');
 					bombe_lance = 0;
-					ym = 20;
+					y_missile = 20;
 					missile_lance = 0;
 					j = 0;
 				}
-				if (yb == 23) {
-					vt100_move(xb, yb);
+				if (y_bombe == 23) {
+					vt100_move(x_bombe, y_bombe);
 					serial_putchar(' ');
 					bombe_lance = 0;
 					j = 0;
@@ -272,13 +262,12 @@ int main(void) {
 
 		/* Collision missile alien */
 		for (va = 0; va < 15; va++) {
-			if (((xm == aliens[va].x) || (xm == aliens[va].x + 1)
-					|| (xm == aliens[va].x + 2) || (xm == aliens[va].x + 3))
-					&& (ym == aliens[va].y)) {
+			if (((x_missile == aliens[va].x) || (x_missile == aliens[va].x + 1)
+					|| (x_missile == aliens[va].x + 2) || (x_missile == aliens[va].x + 3))
+					&& (y_missile == aliens[va].y)) {
 				aliens[va].status = 0;
 				vt100_move(aliens[va].x, aliens[va].y);
 				serial_puts("    ");
-				alien_killed++;
 
 				switch (aliens[va].type) {
 				case 1:
@@ -292,7 +281,7 @@ int main(void) {
 					break;
 				}
 
-				ym = 20;
+				y_missile = 20;
 				missile_lance = 0;
 				aliens[va].x = 0;
 				aliens[va].y = 24;
@@ -300,18 +289,19 @@ int main(void) {
 		}
 
 		/* Variation de vitesse */
-		if (score > 1500) {
+		if ((score > 1500) && (alien_speed != 15)) {
 			alien_speed = 15;
-			if (score > 3000) {
-				alien_speed = 10;
-			}
+		}
+		if ((score > 3000) && (alien_speed != 10)) {
+			alien_speed = 10;
 		}
 	}
+
 	if (live == 48) {
-		game_loose();
+		game_loose(); /* Affiche l'écran de défaite */
 	}
 
-	game_win();
+	game_win(); /* Affiche l'écran de victoire */
 }
 
 void EVAL_AUDIO_TransferComplete_CallBack(uint32_t pBuffer, uint32_t Size) {
