@@ -7,17 +7,32 @@ Dans le cadre de ma formation (3ème année de bachelor) nous avons eu à réali
 ## Présentation du jeu
 Le principe est de détruire des vagues d'aliens au moyen d'un canon laser en se déplaçant horizontalement sur l'écran
 
-le joueur dispose de 3 vies, dès qu'il est touché par une bombe ennemi celui-ci perd une vie
+le joueur dispose de 3 vies, dès qu'il est touché par une bombe ennemie celui-ci perd une vie
 
 pour gagner il suffit de détruire tous les vaisseaux ennemis.
 
 ## Présentation de la carte
 
-La carte **STM32F4_Discovery** envoie une suite de caracteres via sa liaison série série le jeu étant affiché sur un terminal série d'un ordinateur par exemple
+La carte **STM32F4_Discovery** envoie une suite de caractères via sa liaison série, le jeu étant affiché sur un terminal série d'un ordinateur par exemple
 
 ![branchement](img/space.jpg)
 
 Comme le montre le cablage nous avons un cable USB permettant d'alimenter la carte et de téléverser le programme et un autre cable USB permettant de communiquer en série avec un terminal
+
+# Mode d'emploi pour lancer le jeu
+
+* Effectuer le branchement (image au dessus)
+* Téléverser le programme sur votre Carte **STM32F4_Discovery**
+* Lancer un terminal de liaison série
+  
+  Dans mon cas j'utilise **screen** sur linux :
+  ```
+  sudo apt install screen
+  screen /dev/tty<Port COM> 115200
+  ```
+* Appuyez sur le bouton reset (noir)
+
+Une fois dans le menu de vous pouvez changer votre sélection avec les touches **Z** et **S**, les controles étant aussi disponible dans l'onglet **"Rules"**
 
 # Le code
 
@@ -31,9 +46,9 @@ qui m'ont été utile durant toute la période du projet.
 ## La communication série
 
 Il faut tout d'abord établir une liaison UART entre la carte et notre ordinateur
-comme il s'agit d'une communication asyncrone il faut préciser un débit de transmission, dans mon cas j'ai choisi un baudrate de 115 200 baud
+comme il s'agit d'une communication asynchrone il faut préciser un débit de transmission, dans mon cas j'ai choisi un baud-rate de 115 200 baud
 
-J'ai donc utilisé les extensions **serial.h** et **serial.c** qui comporte 3 fonctions utiles dans le cadre de mon projet, la premiere est :
+J'ai donc utilisé les extensions **serial.h** et **serial.c** qui comporte 3 fonctions utiles dans le cadre de mon projet, la première est :
 ```c
 void serial_init(const uint32_t baudrate);
 ```
@@ -43,35 +58,35 @@ la seconde est :
 ```c
 signed char serial_get_last_char(void);
 ```
-Elle permet de récuperer la dernière touche appuyée, dans mon cas j'utilise cette fonction de la manière suivante : 
+Elle permet de récupérer la dernière touche appuyée, dans mon cas j'utilise cette fonction de la manière suivante : 
 ```c
 input = serial_get_last_char();
 ```
-Cela permet de lire la valeur du **serial_get_last_char()** et de stocker cette valeur dans la variable **input**, par exemple si la derniere touche appuyée est la barre espace, j'aurais son numéro dans la table ascii qui est 32.
+Cela permet de lire la valeur du **serial_get_last_char()** et de stocker cette valeur dans la variable **input**, par exemple si la dernière touche appuyée est la barre espace, j'aurais son numéro dans la table ASCII qui est 32.
 
-les deux prochaines sont:
+Les deux prochaines sont :
 ```c
 void serial_putchar(const volatile char c);
 void serial_puts(const volatile char *s);
 ```
 
-Celles-ci permettent d'envoyer pour **serial_putchar** d'envoyer un seul caractère et pour **serial_puts** d'envoyer plusieurs caractères sur la liason série
+Celles-ci permettent d'envoyer pour **serial_putchar** d'envoyer un seul caractère et pour **serial_puts** d'envoyer plusieurs caractères sur la liaison série
 
-Pour recevoir ces transmission sur notre ordinateur nous utilisons un terminal connecté sur la liaison série du port **ttyUSB0** dans notre cas
+Pour recevoir ces transmissions sur notre ordinateur nous utilisons un terminal connecté sur la liaison série du port **ttyUSB0** dans notre cas
 ```
 screen /dev/ttyUSB0 115200
 ```
-J'utilise l'application screen pour ouvrir sur un terminal connecté à ma port série
+J'utilise l'application screen pour ouvrir sur un terminal connecté à mon port série
 
 ## VT100
 
-Pour notre jeu nous utilisons le format d'affichage du VT100 qui est du 80x24
+Pour notre jeu, nous utilisons le format d'affichage du VT100 qui est du 80x24
 
-les VT100 dispose de séquence d'échappement permettant par exemple de déplacer le curseur de notre terminal aux coordonées souhaitées ou encore d'éffacer l'intégralité de l'écran du terminal
+les VT100 dispose de séquence d'échappement permettant par exemple de déplacer le curseur de notre terminal aux coordonnées souhaitées ou encore d'effacer l'intégralité de l'écran du terminal
 
 Nous avons donc utilisé les extensions **vt100.h** et **vt100.c**
 
-ces extensions comporte deux fonctions :
+ces extensions comportent deux fonctions :
 ```c
 void vt100_move(uint8_t x, uint8_t y)
 {
@@ -87,7 +102,7 @@ void vt100_move(uint8_t x, uint8_t y)
     serial_putchar('H');
 }
 ```
-**vt100_move** comprend deux paramètres d'entrés **x** et **y** qui permettent de déplacer le curseur du terminal sur les coordonées **x** et **y**
+**vt100_move** comprend deux paramètres d'entrés **x** et **y** qui permettent de déplacer le curseur du terminal sur les coordonnées **x** et **y**
 
 ```c
 void vt100_clear_screen(void)
@@ -104,13 +119,13 @@ void vt100_clear_screen(void)
     serial_putchar('l');
 }
 ```
-**vt100_clear_screen** qui permet d'éffacer l'intégralité de l'écran
+**vt100_clear_screen** qui permet d'effacer l'intégralité de l'écran
 
 Ces deux fonctions sont très utilisées dans mon programme.
 
 ## Game status
 
-Les extensions **game_status.h** et **game_status.h** sont deux extension crée par moi
+Les extensions **game_status.h** et **game_status.h** sont deux extensions crée par moi
 
 le game_status contient les fonctions suivantes :
 ```c
@@ -120,9 +135,9 @@ void game_win(void);
 void game_credit(void);
 int refresh_screen(void);
 ```
-Le **game_waiting_screen()** est l'écran d'accueil du jeu, on peut y retouver un logo en ascii art et un titre "Space Invarders", en dessous nous avons un menu contenant 3 choix possibles :
+Le **game_waiting_screen()** est l'écran d'accueil du jeu, on peut y retrouver un logo en ASCII art et un titre "Space Invarders", en dessous nous avons un menu contenant 3 choix possibles :
 - Play (pour lancer le jeu)
-- Rules (un onglet contenant les commandes ainsi que le bareme des points)
+- Rules (un onglet contenant les commandes ainsi que le barème des points)
 - Crédits (Pour afficher les crédits du jeu)
 
 ```c
@@ -144,7 +159,7 @@ while (input != 32) /*32 ASCII de l'espace*/
     input = serial_get_last_char();
 }
 ```
-Nous avons une variable **selection** qui peut contenir 3 valeurs de 0 à 2 nous pouvons modifier cette variable avec les deux touches **Z** pour incrémenter et **S** pour décrémenter, cette boucle est effuctuer tant que l'utilisateur n'appuie pas sur la barre espace.
+Nous avons une variable **selection** qui peut contenir 3 valeurs de 0 à 2 nous pouvons modifier cette variable avec les deux touches **Z** pour incrémenter et **S** pour décrémenter, cette boucle est effectuer tant que l'utilisateur n'appuie pas sur la barre espace.
 
 Une fois la barre espace appuyé suivant la valeur de sélection cela va soit lancer le jeu, menu des règles ou celui des crédits
 ```c
@@ -208,7 +223,7 @@ int refresh_screen(void)
     return 0;
 }
 ```
-il permet de mettre des fleches sur la selection de l'utilisateur et d'éffacer celles de la sélection précedente
+il permet de mettre des flèches sur la sélection de l'utilisateur et d'effacer celles de la sélection précedente
 
 Voici le rendu sur le terminal :
 ![menu](img/menu.png)
@@ -271,7 +286,7 @@ void game_credit(void) {
 }
 ```
 
-Le **game_loose()** et le **game_win()** sont deux fonctions qui génere un écran avec le score
+Le **game_loose()** et le **game_win()** sont deux fonctions qui génère un écran avec le score
 
 ```c
 void game_loose(void) {
@@ -311,8 +326,8 @@ Dans mon jeu space invaders il y a plusieurs aliens, j'ai deux crée un type de 
 Chaque alien contient :
 - x (coordonée en x de l'alien)
 - y (coordonée en y de l'alien)
-- sens (je viens utilisé mon type direction)
-- status (si il est en vie ou non)
+- sens (je viens utiliser mon type direction)
+- status (s'il est en vie ou non)
 - type (3 types différents d'alien)
 
 que je déclare de la manière suivante :
@@ -354,7 +369,7 @@ char alien1[] = "<VV>";
 char alien2[] = "<TT>";
 char alien3[] = "<==>";
 ```
-les **compteurs** pour ajouter une notion de temps a notre programme 
+les **compteurs** pour ajouter une notion de temps à notre programme
 ```c
 int i = 0; /* Déplacement alien */
 int h = 0; /* Déplacement missile */
@@ -397,21 +412,21 @@ for (va = 10; va < 15; va++) {
     aliens[va].type = 3;
 }
 ```
-On effectue 3 bloucles, ou on leurs attribue une **ordonnée** :
+On effectue 3 bloucles, ou on leur attribue une **ordonnée** :
 - 4 : Pour les aliens de 0 à 5
 - 6 : Pour les aliens de 5 à 10
 - 8 : Pour les aliens de 10 à 15
   
- une **abcisse** avec un espacement entre chaque alien de 8 caractère (comme chaque alien fait 4 caractères il y a en réalité 4 caractères entre chaque alien),un **status** (en vie = 1 par défaut), un **sens** (Droite par défaut) et on leurs attribue également un **type** :
+ une **abcisse** avec un espacement entre chaque alien de 8 caractères (comme chaque alien fait 4 caractères il y a en réalité 4 caractères entre chaque alien), un **status** (en vie = 1 par défaut), un **sens** (Droite par défaut) et on leur attribue également un **type** :
 - 1 : Pour les aliens de 0 à 5
 - 2 : Pour les aliens de 5 à 10
 - 3 : Pour les aliens de 10 à 15
 
-Après nous avons générer nos 15 aliens de différents typesComme dans le vrai jeu space invaders c'est pour cela que situé dans une boucle **infini**
+Après nous avons généré nos 15 aliens de différents typesComme dans le vrai jeu space invaders c'est pour cela que situé dans une boucle **infini**
 
-Pour que le jeu s'arrette et donc que l'on sorte de la boucle il y a deux événements possibles :
-- Le nombre de vie du jeu est égale à 0
-- Le score du joueurs à atteint le nombre de point maximun (4250)
+Pour que le jeu s'arrête et donc que l'on sorte de la boucle il y a deux événements possibles :
+- Le nombre de vies du jeu est égale à 0
+- Le score du joueur a atteint le nombre de points maximun (4250)
 
 ```c
 if ((live == 48) || (score >= 4250)) {
@@ -422,7 +437,7 @@ if ((live == 48) || (score >= 4250)) {
 
 ## HUD
 
-Pour l'affichage du **score** et des **vies** du joueur, il faut qu'ils soient constament actualisés, c'est pour cela que l'affichage est placé à l'interieur de ma boucle **infini**
+Pour l'affichage du **score** et des **vies** du joueur, il faut qu'ils soient constamment actualisés, c'est pour cela que l'affichage est placé à l'intérieur de ma boucle **infini**
 
 ```c
 sprintf(c_score, "%d", score); /* Converti l'entier score en une chaine de caractere */
@@ -433,16 +448,16 @@ vt100_move(72, 1);
 serial_puts("Lives : ");
 serial_putchar(live);
 ```
-Pour l'affichage du score j'utilise la fonction **sprintf()** qui me permet de convertir mon entier **score** en une chaine de caracteres qui sera stocké dans **c_score** pour être ensuite affiché.
+Pour l'affichage du score j'utilise la fonction **sprintf()** qui me permet de convertir mon entier **score** en une chaine de caractères qui sera stocké dans **c_score** pour être ensuite affiché.
 
 ## Déplacement du vaisseau
 
-Pour déplacer mon vaisseau il faut d'abord que mon utilisateur le commande, c'est pour cela que je viens effectué sur lecture
+Pour déplacer mon vaisseau il faut d'abord que mon utilisateur le commande, c'est pour cela que je viens effectuer sur lecture
 
 ```c
 input = serial_get_last_char(); /* Prend le code ascii de la derniere touche appuyé */
 ```
-La touche appuyé par l'utilisateur est stocké dans la variable **input** et par la suite il suffit de mettre des conditions **if** pour par exemple effetuer un déplacement à gauche ou a droite et également de pouvoir lancer un missile
+La touche appuyée par l'utilisateur est stocké dans la variable **input** et par la suite il suffit de mettre des conditions **if** pour par exemple effectuer un déplacement à gauche ou à droite et également de pouvoir lancer un missile
 ```c
 if (input == 'd') {   /* Condition de déplacement a droite */
     vt100_move(x_vaisseau, y_vaisseau);
@@ -456,7 +471,7 @@ if (input == 'd') {   /* Condition de déplacement a droite */
 ```
 Ce block permet de déplacer le vaisseau de l'utilisateur, en premier lieu il va mettre 5 espaces à l'ancienne position du vaisseau car celui-ci fait également 5 caractères.
 
-Ensuite je viens mettre une conditions pour que mon vaisseau ne sorte pas de la zone de jeu en lieu indiquant que tant qu'il n'est pas égale à 76 il peut continuer à aller à droite.
+Ensuite je viens mettre une condition pour que mon vaisseau ne sorte pas de la zone de jeu en lieu indiquant que tant qu'il n'est pas égale à 76 il peut continuer à aller à droite.
 
 Puis j'affiche le vaisseau sur sa nouvelle position.
 
@@ -469,9 +484,9 @@ if (input == 32 && y_missile == y_vaisseau) {
     missile_lance = 1;
     x_missile = x_vaisseau + 2;
 ```
-On vient utilisé la variable **missile_lance** qui me permet de savoir si un missile est lancé, ici on vient le passer à 1.
+On vient utiliser la variable **missile_lance** qui me permet de savoir si un missile est lancé, ici on vient le passer à 1.
 
-On vient également positionner le missile sur l'abscisse **x** de mon vaisseau, je viens ajouter 2 car mon vaisseau fait 5 caractères et je veux que mon missile se lance au millieu de mon vaisseau
+On vient également positionner le missile sur l'abscisse **x** de mon vaisseau, je viens ajouter 2 car mon vaisseau fait 5 caractères et je veux que mon missile se lance au milieu de mon vaisseau
 ```c
 }
 if (missile_lance == 1) {
@@ -494,11 +509,11 @@ if (missile_lance == 1) {
     }
 }
 ```
-Une fois mon missile lancé il doit éffectué une trajectoire vecticale vers le haut.
+Une fois mon missile lancé il doit effectuer une trajectoire verticale vers le haut.
 
 je viens utiliser mon compteur **h** qui me permet à tous les 10 tours de boucle d'effectuer un seul déplacement du missile, ce qui évite que le missile aille à une vitesse trop grande
 
-Puis je viens ajouter une autre conditions qui permet une fois que mon vaisseau atteint le sommet de ma zone de jeu d'éffacer le missile, de mettre missile_lance à 0 et de remettre le missile à son ordonnée initiale
+Puis je viens ajouter une autre condition qui permet une fois que mon vaisseau atteint le sommet de ma zone de jeu d'effacer le missile, de mettre missile_lance à 0 et de remettre le missile à son ordonnée initiale
 
 ## Les bombes ennemies
 
@@ -518,7 +533,7 @@ if (j == 300) {
 }
 ```
 
-Pour que les bombes tombent de maniere aléatoire, j'utilise la fonction **rand()** auquel je viens faire un modulo de 15 car j'ai 15 aliens
+Pour que les bombes tombent de manière aléatoire, j'utilise la fonction **rand()** auquel je viens faire un modulo de 15 car j'ai 15 aliens
 
 Ensuite je viens faire une boucle pour relancer l'affectation si nombre aléatoire tombe sur un alien qui n'est plus en vie
 
@@ -539,9 +554,9 @@ if (bombe_lance == 1) {
     }
 }
 ```
-Si une bombe ennemies à les mêmes coordonées que mon vaisseau je retire une vie à l'utilisateur
+Si une bombe ennemie a les mêmes coordonnées que mon vaisseau je retire une vie à l'utilisateur
 
-Pour ajouter une **"hitbox"** a mon vaisseau il suffit de faire des **ou** pour chaque possibilités 
+Pour ajouter une **"hitbox"** a mon vaisseau il suffit de faire des **ou** pour chaque possibilité
 
 ```c
 if (((x_bombe == x_vaisseau) || (x_bombe == x_vaisseau + 1) || (x_bombe == x_vaisseau + 2)
@@ -552,9 +567,9 @@ if (((x_bombe == x_vaisseau) || (x_bombe == x_vaisseau + 1) || (x_bombe == x_vai
 
 Ici aussi nous utilisons un compteur **i** pour que les ennemis ne se déplace pas à une vitesse trop grande
 
-On vient faire une boucle pour le déplacement s'effectue pour tout les aliens
+On vient faire une boucle pour le déplacement s'effectue pour tous les aliens
 
-l'alien s'affiche seulement si il est en vie, je viens également mettre un **switch** suivant le type de l'alien.
+l'alien s'affiche seulement s'il est en vie, je viens également mettre un **switch** suivant le type de l'alien.
 
 ```c
 /* Deplacement des aliens */
@@ -592,13 +607,13 @@ Puis j'effectue la même conditions pour mes aliens allant à gauche
 
 ## Collision missile alien
 
-Comme pour les bombes je dois ajouter une hitbox pour chacun des mes aliens
+Comme pour les bombes je dois ajouter une hitbox pour chacun de mes aliens
 
-Si un des mes aliens à les mêmes coordonnées que mon missile cela signifie qu'il est touché par lui
+Si un de mes aliens a les mêmes coordonnées que mon missile cela signifie qu'il est touché par lui
 
 Le **status** de mon alien passe donc à 0 et je le déplace en dehors de la zone de jeu
 
-Suivant le type de l'alien, les points obtenues lors que sa détruction sont différents je viens donc ajouté une condition avec un **switch** et j'incrémente ensuite le score
+Suivant le type de l'alien, les points obtenues lors que sa déstruction sont différents je viens donc ajouté une condition avec un **switch** et j'incrémente ensuite le score
 
 ```c
 for (va = 0; va < 15; va++) {
@@ -648,19 +663,19 @@ if ((score > 3000) && (alien_speed != 10)) {
 
 ## La notion de temps
 
-Pour le déplacement des ennemis, des missiles ou encore des bombes il est obligatoire de limité leurs vitesse sinon à chaque tours de boucle l'objet va effectuer un déplacement et va à aller a une vitesse trop importante
+Pour le déplacement des ennemis, des missiles ou encore des bombes il est obligatoire de limité leurs vitesses sinon à chaque tour de boucle l'objet va effectuer un déplacement et va à aller a une vitesse trop importante
 
-Pour cela j'utilse des variables **"compteur"** qui vont compté le nombre de boucle, puis dans mon programme je vais utilisé un **if** et quand mon nombre de tour de boucle valide la condition du if cela effectue un déplacement.
+Pour cela j'utilise des variables **"compteur"** qui vont compter le nombre de boucles, puis dans mon programme je vais utiliser un **if** et quand mon nombre de tours de boucle valide la condition du if cela effectue un déplacement.
 
 Exemple :
 ```c
 if (j == 300)
 ```
-Ici il s'agit de mon compteur pour gerer le délaie entre chaque lancement de bombe.
+Ici il s'agit de mon compteur pour gérer le délaie entre chaque lancement de bombe.
 
 ## Affichage du score
 
-Pour envoyer un ou plusieurs caracteres, j'utilises respectivement les fonctions **serial_putchar()** et **serial_puts()**. Pour afficher des carateres il n'y a aucun souci
+Pour envoyer un ou plusieurs caractères, j'utilise respectivement les fonctions **serial_putchar()** et **serial_puts()**. Pour afficher des caratères il n'y a aucun souci
 mais quand il faut afficher le **score** qui est stocké dans un entier si j'utilise la fonction de cette manière :
 ```c
 serial_puts(score)
@@ -674,7 +689,7 @@ sprintf(c_score, "%d", score);
 ```
 Cette fonction permet d'affecter la valeur de score en **décimal** dans une chaine de caractères **c_score**
 
-Par la suite il me suffit simplement **c_score**
+Par la suite il me suffit d'afficher **c_score**
 ```c
 serial_puts(c_score);
 ```
@@ -688,3 +703,7 @@ if (missile_lance == 1) {/* déplacement missile */}
 ```
 
 Le missile n'a donc plus besoin que j'appuie sur la barre espace pour avancer.
+
+# Notions apprises durant ce projet
+
+Au début de ce projet j'avais très peu d'expérience avec le **langage C**, et grâce à ce projet j'ai réussi à acquérir des compétences que je n'avais pas avant, le fait que le projet soit en autonomie m'a permis de me forcer à aller chercher les informations qui me manquait pour la création de ce jeu
