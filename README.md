@@ -4,14 +4,14 @@
 
 Dans le cadre de ma formation (3ème année de bachelor) nous avons eu à réaliser le jeu **Space Invaders** en **Language C** sur une carte **STM32F4_Discovery**
 
-### Présentation du jeu
+## Présentation du jeu
 Le principe est de détruire des vagues d'aliens au moyen d'un canon laser en se déplaçant horizontalement sur l'écran
 
 le joueur dispose de 3 vies, dès qu'il est touché par une bombe ennemi celui-ci perd une vie
 
 pour gagner il suffit de détruire tous les vaisseaux ennemis.
 
-### Présentation de la carte
+## Présentation de la carte
 
 La carte **STM32F4_Discovery** envoie une suite de caracteres via sa liaison série série le jeu étant affiché sur un terminal série d'un ordinateur par exemple
 
@@ -33,7 +33,7 @@ qui m'ont été utile durant toute la période du projet.
 Il faut tout d'abord établir une liaison UART entre la carte et notre ordinateur
 comme il s'agit d'une communication asyncrone il faut préciser un débit de transmission, dans mon cas j'ai choisi un baudrate de 115 200 baud
 
-J'ai donc utilisé les extension **serial.h** et **serial.c** qui comporte 3 fonctions utile dans le cadre de mon projet, la premiere est :
+J'ai donc utilisé les extensions **serial.h** et **serial.c** qui comporte 3 fonctions utiles dans le cadre de mon projet, la premiere est :
 ```c
 void serial_init(const uint32_t baudrate);
 ```
@@ -406,3 +406,285 @@ On effectue 3 bloucles, ou on leurs attribue une **ordonnée** :
 - 1 : Pour les aliens de 0 à 5
 - 2 : Pour les aliens de 5 à 10
 - 3 : Pour les aliens de 10 à 15
+
+Après nous avons générer nos 15 aliens de différents typesComme dans le vrai jeu space invaders c'est pour cela que situé dans une boucle **infini**
+
+Pour que le jeu s'arrette et donc que l'on sorte de la boucle il y a deux événements possibles :
+- Le nombre de vie du jeu est égale à 0
+- Le score du joueurs à atteint le nombre de point maximun (4250)
+
+```c
+if ((live == 48) || (score >= 4250)) {
+			break;
+		}
+```
+(0 vaut 48 en ASCII)
+
+## HUD
+
+Pour l'affichage du **score** et des **vies** du joueur, il faut qu'ils soient constament actualisés, c'est pour cela que l'affichage est placé à l'interieur de ma boucle **infini**
+
+```c
+sprintf(c_score, "%d", score); /* Converti l'entier score en une chaine de caractere */
+vt100_move(2, 1);
+serial_puts("Score : ");
+serial_puts(c_score);
+vt100_move(72, 1);
+serial_puts("Lives : ");
+serial_putchar(live);
+```
+Pour l'affichage du score j'utilise la fonction **sprintf()** qui me permet de convertir mon entier **score** en une chaine de caracteres qui sera stocké dans **c_score** pour être ensuite affiché.
+
+## Déplacement du vaisseau
+
+Pour déplacer mon vaisseau il faut d'abord que mon utilisateur le commande, c'est pour cela que je viens effectué sur lecture
+
+```c
+input = serial_get_last_char(); /* Prend le code ascii de la derniere touche appuyé */
+```
+La touche appuyé par l'utilisateur est stocké dans la variable **input** et par la suite il suffit de mettre des conditions **if** pour par exemple effetuer un déplacement à gauche ou a droite et également de pouvoir lancer un missile
+```c
+if (input == 'd') {   /* Condition de déplacement a droite */
+    vt100_move(x_vaisseau, y_vaisseau);
+    serial_puts("    ");
+    if (x_vaisseau != 76) {
+        x_vaisseau += 1;
+    }
+    vt100_move(x_vaisseau, y_vaisseau);
+    serial_puts(ship);
+}
+```
+Ce block permet de déplacer le vaisseau de l'utilisateur, en premier lieu il va mettre 5 espaces à l'ancienne position du vaisseau car celui-ci fait également 5 caractères.
+
+Ensuite je viens mettre une conditions pour que mon vaisseau ne sorte pas de la zone de jeu en lieu indiquant que tant qu'il n'est pas égale à 76 il peut continuer à aller à droite.
+
+Puis j'affiche le vaisseau sur sa nouvelle position.
+
+## Les Missiles
+
+Pour le lancement d'un missile j'ai choisi la touche **espace** 
+
+```c
+if (input == 32 && y_missile == y_vaisseau) {
+    missile_lance = 1;
+    x_missile = x_vaisseau + 2;
+```
+On vient utilisé la variable **missile_lance** qui me permet de savoir si un missile est lancé, ici on vient le passer à 1.
+
+On vient également positionner le missile sur l'abscisse **x** de mon vaisseau, je viens ajouter 2 car mon vaisseau fait 5 caractères et je veux que mon missile se lance au millieu de mon vaisseau
+```c
+}
+if (missile_lance == 1) {
+    h++;
+
+    if (y_missile != 3 && h == 10) {
+        vt100_move(x_missile, y_missile);
+        serial_putchar(' ');
+        y_missile -= 1;
+        vt100_move(x_missile, y_missile);
+        serial_putchar(missile);
+        h = 0;
+
+        if (y_missile == 3) {
+            vt100_move(x_missile, y_missile);
+            serial_putchar(' ');
+            y_missile = 20;
+            missile_lance = 0;
+        }
+    }
+}
+```
+Une fois mon missile lancé il doit éffectué une trajectoire vecticale vers le haut.
+
+je viens utiliser mon compteur **h** qui me permet à tous les 10 tours de boucle d'effectuer un seul déplacement du missile, ce qui évite que le missile aille à une vitesse trop grande
+
+Puis je viens ajouter une autre conditions qui permet une fois que mon vaisseau atteint le sommet de ma zone de jeu d'éffacer le missile, de mettre missile_lance à 0 et de remettre le missile à son ordonnée initiale
+
+## Les bombes ennemies
+
+Pour les bombes, j'utilise également un compteur **j** qui permet à tous les 300 tours de boucle de lancer une bombe
+
+```c
+/* Bombe alien */
+if (j == 300) {
+    random = rand() % 15;
+    while (aliens[random].status == 0) {
+        random = rand() % 15;
+    }
+    bombe_lance = 1;
+    x_bombe = aliens[random].x + 1;
+    y_bombe = aliens[random].y;
+
+}
+```
+
+Pour que les bombes tombent de maniere aléatoire, j'utilise la fonction **rand()** auquel je viens faire un modulo de 15 car j'ai 15 aliens
+
+Ensuite je viens faire une boucle pour relancer l'affectation si nombre aléatoire tombe sur un alien qui n'est plus en vie
+
+Comme pour le missile j'utilise une variable **bombe_lance** pour indiquer qu'une bombe est lancé
+
+```c
+if (bombe_lance == 1) {
+    k++;
+    if (y_bombe != 23 && k == 20) {
+        vt100_move(x_bombe, y_bombe);
+        serial_putchar(' ');
+        y_bombe += 1;
+        vt100_move(x_bombe, y_bombe);
+        serial_putchar(bombe);
+        k = 0;
+        if (((x_bombe == x_vaisseau) || (x_bombe == x_vaisseau + 1) || /* Variation de vitesse */;
+            j = 0;
+    }
+}
+```
+Si une bombe ennemies à les mêmes coordonées que mon vaisseau je retire une vie à l'utilisateur
+
+Pour ajouter une **"hitbox"** a mon vaisseau il suffit de faire des **ou** pour chaque possibilités 
+
+```c
+if (((x_bombe == x_vaisseau) || (x_bombe == x_vaisseau + 1) || (x_bombe == x_vaisseau + 2)
+                || (x_bombe == x_vaisseau + 3) || (x_bombe == x_vaisseau + 4)) && (y_bombe == y_vaisseau))
+```
+
+## Déplacement des aliens
+
+Ici aussi nous utilisons un compteur **i** pour que les ennemis ne se déplace pas à une vitesse trop grande
+
+On vient faire une boucle pour le déplacement s'effectue pour tout les aliens
+
+l'alien s'affiche seulement si il est en vie, je viens également mettre un **switch** suivant le type de l'alien.
+
+```c
+/* Deplacement des aliens */
+if (i == alien_speed) {
+    for (va = 0; va < 15; va++) {
+        if (aliens[va].status == 1) {
+            vt100_move(aliens[va].x, aliens[va].y);
+            serial_puts("    ");
+
+            if (aliens[va].sens == Droite) {
+                aliens[va].x += 1;
+                vt100_move(aliens[va].x, aliens[va].y);
+                switch (aliens[va].type) {
+                case 1:
+                    serial_puts(alien1);
+                    break;
+                case 2:
+                    serial_puts(alien2);
+                    break;
+                case 3:
+                    serial_puts(alien3);
+                    break;
+                }
+                if (aliens[va].x == 78) {
+                    vt100_move(aliens[va].x, aliens[va].y);
+                    serial_puts("    ");
+                    aliens[va].y += 1;
+                    aliens[va].sens = Gauche;
+                }
+            }
+```
+Pour mes aliens allant à droite, si l'alien arrive à 78 qui est la limite de la zone de jeu cela change la direction de mon alien.
+
+Puis j'effectue la même conditions pour mes aliens allant à gauche
+
+## Collision missile alien
+
+Comme pour les bombes je dois ajouter une hitbox pour chacun des mes aliens
+
+Si un des mes aliens à les mêmes coordonnées que mon missile cela signifie qu'il est touché par lui
+
+Le **status** de mon alien passe donc à 0 et je le déplace en dehors de la zone de jeu
+
+Suivant le type de l'alien, les points obtenues lors que sa détruction sont différents je viens donc ajouté une condition avec un **switch** et j'incrémente ensuite le score
+
+```c
+for (va = 0; va < 15; va++) {
+    if (((x_missile == aliens[va].x) || (x_missile == aliens[va].x + 1)
+            || (x_missile == aliens[va].x + 2) || (x_missile == aliens[va].x + 3))
+            && (y_missile == aliens[va].y)) {
+        aliens[va].status = 0;
+        vt100_move(aliens[va].x, aliens[va].y);
+        serial_puts("    ");
+
+        switch (aliens[va].type) {
+        case 1:
+            score += 500;
+            break;
+        case 2:
+            score += 250;
+            break;
+        case 3:
+            score += 100;
+            break;
+        }
+
+        y_missile = 20;
+        missile_lance = 0;
+        aliens[va].x = 0;
+        aliens[va].y = 24;
+    }
+}
+```
+
+## Variation de vitesse
+
+Pour ajouter de la difficulté au jeu, je viens modifier la vitesse quand le joueur atteint un certains score
+
+```c
+if ((score > 1500) && (alien_speed != 15)) {
+    alien_speed = 15;
+}
+if ((score > 3000) && (alien_speed != 10)) {
+    alien_speed = 10;
+}
+```
+
+**alien_speed** étant le nombre de boucle qu'il faut effectuer pour que les ennemis effectue un déplacement, plus le nombre de cette variable est bas plus la vitesse va être rapide.
+
+# 3 Difficultés rencontrèes pendant le projet
+
+## La notion de temps
+
+Pour le déplacement des ennemis, des missiles ou encore des bombes il est obligatoire de limité leurs vitesse sinon à chaque tours de boucle l'objet va effectuer un déplacement et va à aller a une vitesse trop importante
+
+Pour cela j'utilse des variables **"compteur"** qui vont compté le nombre de boucle, puis dans mon programme je vais utilisé un **if** et quand mon nombre de tour de boucle valide la condition du if cela effectue un déplacement.
+
+Exemple :
+```c
+if (j == 300)
+```
+Ici il s'agit de mon compteur pour gerer le délaie entre chaque lancement de bombe.
+
+## Affichage du score
+
+Pour envoyer un ou plusieurs caracteres, j'utilises respectivement les fonctions **serial_putchar()** et **serial_puts()**. Pour afficher des carateres il n'y a aucun souci
+mais quand il faut afficher le **score** qui est stocké dans un entier si j'utilise la fonction de cette manière :
+```c
+serial_puts(score)
+```
+
+Cela affiche la valeur ASCII du nombre associé au score et n'affiche pas le résultat en décimal attendu
+
+Pour résoudre ce problème j'ai donc fait usage de la fonction **sprintf** :
+```c
+sprintf(c_score, "%d", score);
+```
+Cette fonction permet d'affecter la valeur de score en **décimal** dans une chaine de caractères **c_score**
+
+Par la suite il me suffit simplement **c_score**
+```c
+serial_puts(c_score);
+```
+## Autonomie Missile
+
+Au début du lancement du missile j'utilisais une condition **if** similaire à mon déplacement gauche/droite du vaisseau, le missile se lançais sans problème sauf que je devais maintenant la barre espace (qui est la touche de lancement du missile) pour que le missile continue à effectuer son déplacement
+
+Pour résoudre ce problème j'ai donc ajouté une variable **missile_lance** qui vaut **0** quand le missile n'est pas lancé et **1** quand celui-ci est lancé et j'ai donc la fonction de déplacement à l'intérieur du bloc de la condition.
+```c
+if (missile_lance == 1) {/* déplacement missile */}
+```
+
+Le missile n'a donc plus besoin que j'appuie sur la barre espace pour avancer.
